@@ -212,7 +212,37 @@
 
 ---
 
-## 10. 目录结构约定
+## 10. 技术栈
+
+| 层 | 选型 |
+|---|---|
+| 语言 | Kotlin 2.1.0 |
+| 构建 | Gradle 8.x + Kotlin DSL（KTS），Android Gradle Plugin 8.7.3 |
+| SDK 范围 | `minSdk 28`（Android 9）/ `targetSdk 35`（Android 15） |
+| UI | Jetpack Compose + Material 3（Compose BOM 2025.01.00） |
+| 并发 | Kotlin Coroutines 1.9.0 + `MutableSharedFlow` |
+| 音频采集 | AOSP `AudioRecord`（16kHz / 单声道 / PCM 16-bit） |
+| 语音识别 | `com.alphacephei:vosk-android:0.3.47` + `vosk-model-small-cn-0.22` 模型（打包进 `assets/`） |
+| 无障碍 | AOSP `AccessibilityService` + `GestureDescription` |
+| 提示音 | AOSP `SoundPool` |
+| 存储 | Jetpack `DataStore (Preferences)` 1.1.1 |
+| DI | 不引入（手动 `object` 单例） |
+| 日志 | `android.util.Log` |
+| 单元测试 | JUnit4 + MockK |
+| 仪器测试 | AndroidX Test + Compose UI Test |
+
+**权限清单（`AndroidManifest.xml`）：**
+- `RECORD_AUDIO`
+- `FOREGROUND_SERVICE`
+- `FOREGROUND_SERVICE_MICROPHONE`（Android 14+ 强制）
+- 声明 `BIND_ACCESSIBILITY_SERVICE`（仅 meta-data，真正启用靠用户在系统设置里手动打开）
+
+**开发环境要求：**
+- macOS（用户实际环境）+ Android Studio Ladybug 或更新版本（自带 JDK 21、Android SDK Manager、ADB、Gradle wrapper 支持）
+- Android SDK Platform API 35 + Build-Tools 35 + Platform-Tools
+- Vivo X200 Pro 开启开发者选项 + USB 调试
+
+## 11. 目录结构约定
 
 ```
 ~/workspace/my-project/shower-voice-ctrl/
