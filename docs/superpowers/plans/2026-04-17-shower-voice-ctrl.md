@@ -1754,3 +1754,22 @@ git commit -m "docs: add README with build and usage instructions"
 - 手势坐标硬编码为 `GestureConfig.default()`，没做调试面板
 - 未做功耗优化（30 分钟自动停止）
 - 未做快手 / 视频号等其他短视频 App 适配
+
+---
+
+## As-Built 说明（2026-04-18 更新）
+
+**状态**：所有 Task（除 Task 8 仪器测试因 Vivo USB 安装权限拦截未在本机执行）已完成并提交。MVP 已装机跑通。
+
+**与本计划代码片段不一致的地方**：
+- Task 7 的 SoundFeedback 已**完全移除**，替换为 `TYPE_ACCESSIBILITY_OVERLAY` 的视觉横幅；四个 ogg 资源已删，改用 4 个矢量 drawable（`ic_chevron_down/up/pause/unmatched`）
+- Task 8 的 `VoskRecognizer` grammar 改为空格分隔单字；匹配逻辑改为模糊匹配 + `[unk]` 过滤，且**只处理 final 结果**
+- Task 10 的 `VoiceForegroundService` 录音源从 `VOICE_RECOGNITION` 改为 `VOICE_COMMUNICATION` + AEC + NS
+- Task 9 的 `ShowerAccessibilityService` 增加顶部叠层横幅逻辑（在这个类里直接画 `WindowManager` view）
+- Task 11 的 `MainScreen` 重新设计为 iOS 风格卡片 + 呼吸指示动画，命名 "隔空刷"
+- 启动图标替换为自绘机器人 + 声波 logo（见 `res/drawable/ic_launcher_foreground.xml` 和 `res/drawable/ic_launcher_background.xml`）
+- Vosk 模型安装脚本额外生成 `uuid` 标记文件（`StorageService.unpack` 要求）
+- 构建版本 as-built 为 AGP 9.1.1 / Kotlin 2.2.10 / compileSdk 36（而非计划里的 AGP 8.7.3 / Kotlin 2.1.0 / compileSdk 35）
+
+**每条偏离的原因和影响**见设计文档的 **§12 As-built 变更记录**：
+`docs/superpowers/specs/2026-04-17-shower-voice-ctrl-design.md` §12
