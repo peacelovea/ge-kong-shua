@@ -1,35 +1,38 @@
 package com.shower.voicectrl.sound
 
-import android.content.Context
-import android.media.AudioAttributes
-import android.media.SoundPool
-import com.shower.voicectrl.R
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.util.Log
 import com.shower.voicectrl.bus.Command
 
-class SoundFeedback(context: Context) {
+/**
+ * 即时反馈音。用 [ToneGenerator] 而不是 SoundPool：
+ *   - 无需加载 ogg/wav 资源，构造即可用
+ *   - 各命令用不同的系统 tone 区分
+ *   - 通过 STREAM_MUSIC 走媒体音量，便于音量调节
+ */
+class SoundFeedback {
 
-    private val pool: SoundPool = SoundPool.Builder()
-        .setMaxStreams(2)
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-        ).build()
-
-    private val ids: Map<Command, Int> = mapOf(
-        Command.NEXT to pool.load(context, R.raw.fb_next, 1),
-        Command.PREV to pool.load(context, R.raw.fb_prev, 1),
-        Command.PAUSE to pool.load(context, R.raw.fb_pause, 1),
-        Command.UNMATCHED to pool.load(context, R.raw.fb_unmatched, 1),
-    )
+    private val tone = ToneGenerator(AudioManager.STREAM_MUSIC, VOLUME)
 
     fun play(command: Command) {
-        val id = ids[command] ?: return
-        pool.play(id, 1f, 1f, 1, 0, 1f)
+        val type = when (command) {
+            Command.NEXT -> ToneGenerator.TONE_PROP_BEEP2        // 上扬双音
+            Command.PREV -> ToneGenerator.TONE_PROP_BEEP         // 下行双音
+            Command.PAUSE -> ToneGenerator.TONE_PROP_ACK         // 平稳中音
+            Command.UNMATCHED -> ToneGenerator.TONE_PROP_NACK    // 闷音
+        }
+        val ok = tone.startTone(type, DURATION_MS)
+        if (!ok) Log.w(TAG, "startTone returned false for $command")
     }
 
     fun release() {
-        pool.release()
+        tone.release()
+    }
+
+    companion object {
+        private const val TAG = "SoundFeedback"
+        private const val VOLUME = 80            // 0..100
+        private const val DURATION_MS = 150
     }
 }

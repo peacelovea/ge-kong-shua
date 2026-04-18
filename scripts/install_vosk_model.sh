@@ -23,4 +23,8 @@ curl -L -o "$TMP_DIR/$MODEL_ZIP" "$MODEL_URL"
 echo "Unzipping to $ASSETS_DIR ..."
 unzip -q "$TMP_DIR/$MODEL_ZIP" -d "$ASSETS_DIR"
 
+# Vosk's StorageService.unpack() requires a `uuid` file to do version tracking;
+# the upstream model zip doesn't ship one, so we create a stable marker.
+echo "shower-voice-ctrl-v1" > "$ASSETS_DIR/$MODEL_NAME/uuid"
+
 echo "Done. Model installed at $ASSETS_DIR/$MODEL_NAME"

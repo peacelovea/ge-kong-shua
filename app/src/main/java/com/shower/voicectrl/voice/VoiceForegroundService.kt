@@ -59,11 +59,21 @@ class VoiceForegroundService : Service() {
             SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
         ).coerceAtLeast(SAMPLE_RATE / 2)
 
+        // VOICE_COMMUNICATION：为"扬声器外放同时收音"场景设计（VoIP 通话），
+        // 会自动启用回声消除（AEC）和降噪（NS），对抖音在后台放视频时抢麦很有用。
         val record = AudioRecord(
-            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
             SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT, bufSize
         )
+
+        // 显式启用 AEC / NS（如果设备支持），双保险
+        if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
+            android.media.audiofx.AcousticEchoCanceler.create(record.audioSessionId)?.enabled = true
+        }
+        if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
+            android.media.audiofx.NoiseSuppressor.create(record.audioSessionId)?.enabled = true
+        }
 
         val buffer = ShortArray(1024)
         try {
@@ -100,7 +110,7 @@ class VoiceForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("正在监听语音")
+            .setContentTitle("隔空刷 · 监听中")
             .setContentText("说 \"下一条\" / \"上一条\" / \"暂停\"")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
