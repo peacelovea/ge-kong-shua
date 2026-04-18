@@ -1,0 +1,146 @@
+package com.shower.voicectrl.voice
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.os.Build
+import android.os.IBinder
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.shower.voicectrl.MainActivity
+import com.shower.voicectrl.R
+import com.shower.voicectrl.bus.CommandBus
+import com.shower.voicectrl.bus.Debouncer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+class VoiceForegroundService : Service() {
+
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var captureJob: Job? = null
+    private var recognizer: VoskRecognizer? = null
+    private val debouncer = Debouncer()
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        startForegroundWithNotification()
+        if (captureJob?.isActive != true) {
+            captureJob = scope.launch { runCaptureLoop() }
+        }
+        return START_STICKY
+    }
+
+    private suspend fun runCaptureLoop() {
+        recognizer = VoskRecognizer.create(applicationContext) { cmd ->
+            if (debouncer.shouldEmit(cmd)) {
+                CommandBus.INSTANCE.emit(cmd)
+            }
+        }
+
+        val bufSize = AudioRecord.getMinBufferSize(
+            SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
+        ).coerceAtLeast(SAMPLE_RATE / 2)
+
+        val record = AudioRecord(
+            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+            AudioFormat.ENCODING_PCM_16BIT, bufSize
+        )
+
+        val buffer = ShortArray(1024)
+        try {
+            record.startRecording()
+            while (scope.isActive) {
+                val n = record.read(buffer, 0, buffer.size)
+                if (n > 0) recognizer?.acceptPcm(buffer, n)
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "capture loop crashed", t)
+        } finally {
+            try { record.stop() } catch (_: Throwable) {}
+            record.release()
+        }
+    }
+
+    override fun onDestroy() {
+        captureJob?.cancel()
+        recognizer?.close()
+        recognizer = null
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    private fun startForegroundWithNotification() {
+        ensureChannel()
+        val openIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val stopIntent = PendingIntent.getService(
+            this, 1,
+            Intent(this, VoiceForegroundService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("正在监听语音")
+            .setContentText("说 \"下一条\" / \"上一条\" / \"暂停\"")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setOngoing(true)
+            .setContentIntent(openIntent)
+            .addAction(0, "停止", stopIntent)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIF_ID, notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIF_ID, notification)
+        }
+    }
+
+    private fun ensureChannel() {
+        val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (mgr.getNotificationChannel(CHANNEL_ID) == null) {
+            mgr.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "语音监听", NotificationManager.IMPORTANCE_LOW)
+            )
+        }
+    }
+
+    companion object {
+        const val ACTION_STOP = "com.shower.voicectrl.STOP"
+        private const val CHANNEL_ID = "voice_listen"
+        private const val NOTIF_ID = 1001
+        private const val SAMPLE_RATE = 16_000
+        private const val TAG = "VoiceFgService"
+
+        fun start(context: Context) {
+            val intent = Intent(context, VoiceForegroundService::class.java)
+            context.startForegroundService(intent)
+        }
+
+        fun stop(context: Context) {
+            val intent = Intent(context, VoiceForegroundService::class.java)
+                .setAction(ACTION_STOP)
+            context.startService(intent)
+        }
+    }
+}

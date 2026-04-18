@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">shower-voice-ctrl</string>
+    <string name="accessibility_description">在抖音里接收语音命令并模拟滑动 / 点击手势</string>
 </resources>
