@@ -19,6 +19,28 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 只为真实手机的 ABI 打包，省掉 x86 / x86_64（只用于模拟器）。
+        // 开发阶段跑模拟器的话，可以临时加回来。
+        ndk {
+            abiFilters += setOf("arm64-v8a", "armeabi-v7a")
+        }
+    }
+
+    // Release 签名从 ~/.gradle/gradle.properties 读取（不进仓库）。
+    // 未配置时跳过 signingConfig，只能构建 debug。
+    // 所有值都 trim()，容忍文件末尾的空格 / 换行。
+    signingConfigs {
+        fun prop(name: String): String? = (project.findProperty(name) as String?)?.trim()
+        val storePath = prop("GEKONG_STORE_FILE")
+        if (!storePath.isNullOrEmpty()) {
+            create("release") {
+                storeFile = file(storePath)
+                storePassword = prop("GEKONG_STORE_PASSWORD") ?: ""
+                keyAlias = prop("GEKONG_KEY_ALIAS") ?: ""
+                keyPassword = prop("GEKONG_KEY_PASSWORD") ?: ""
+            }
+        }
     }
 
     buildTypes {
@@ -28,6 +50,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {

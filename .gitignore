@@ -24,3 +24,7 @@ captures/
 
 # Vosk 模型（体积大，通过脚本下载）
 app/src/main/assets/vosk-model-small-cn-0.22/
+
+# 签名密钥（绝对不能进仓库）
+*.jks
+*.keystore
