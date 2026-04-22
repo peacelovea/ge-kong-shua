@@ -65,8 +65,8 @@ class ShowerAccessibilityService : AccessibilityService() {
             showBanner(command)
             return
         }
-        if (fgPkg != DOUYIN_PACKAGE) {
-            showBanner(Command.UNMATCHED, subtitle = "非抖音前台")
+        if (fgPkg !in SUPPORTED_PACKAGES) {
+            showBanner(Command.UNMATCHED, subtitle = "非短视频 App 前台")
             return
         }
         showBanner(command)
@@ -238,7 +238,14 @@ class ShowerAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "ShowerAccess"
-        private const val DOUYIN_PACKAGE = "com.ss.android.ugc.aweme"
         private const val OVERLAY_MS = 1200L
+
+        // 支持的短视频 App 白名单。UI 交互模式（上滑切下一条 / 下滑回上一条 / 点中心暂停）一致即可加入。
+        private val SUPPORTED_PACKAGES = setOf(
+            "com.ss.android.ugc.aweme",       // 抖音
+            "com.ss.android.ugc.aweme.lite",  // 抖音极速版
+            "com.smile.gifmaker",             // 快手
+            "com.kuaishou.nebula",            // 快手极速版
+        )
     }
 }
