@@ -177,3 +177,89 @@ ls -lh app/build/outputs/apk/debug/app-debug.apk
 ./gradlew clean
 ```
 不要手删 `build/`，偶尔 gradle 元数据会错乱。
+
+---
+
+## 5. 发版（发布到 GitHub Releases）
+
+### 5.0 一次性准备（已完成，作存档）
+
+- **Release keystore**：`~/keystores/ge-kong-shua.jks`
+  - **绝对不能丢**，丢了等于这个 App 再也无法发布更新（老用户装不上新版）
+  - 建议至少**两处备份**：本地 + 密码管理器（1Password/Bitwarden）加密附件
+- **签名密码**存在 `~/.gradle/gradle.properties`（仓库外，不进 git）：
+  ```properties
+  GEKONG_STORE_FILE=/Users/kaifa/keystores/ge-kong-shua.jks
+  GEKONG_STORE_PASSWORD=<填>
+  GEKONG_KEY_ALIAS=ge-kong-shua
+  GEKONG_KEY_PASSWORD=<填>
+  ```
+- 换电脑时把 `.jks` 拷过去 + 在新机 `gradle.properties` 重填路径和密码即可
+
+### 5.1 发版 Checklist（每次发版跑一遍）
+
+以 `v0.1.1` 为例：
+
+```bash
+# 1. 确认 main 是干净的
+git status                              # 应显示 nothing to commit
+
+# 2. 改版本号
+#    编辑 app/build.gradle.kts：
+#      versionCode 1 → 2
+#      versionName "0.1.0" → "0.1.1"
+#    写 RELEASE_NOTES_v0.1.1.md
+
+# 3. 单测
+./gradlew :app:testDebugUnitTest        # 全绿
+
+# 4. 构建 release APK
+./gradlew :app:assembleRelease
+ls -lh app/build/outputs/apk/release/app-release.apk   # 看大小
+
+# 5. 签名校验（可选但推荐）
+APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -1)
+$APKSIGNER verify --verbose app/build/outputs/apk/release/app-release.apk | head -3
+# 期望：Verifies / Verified using v2 scheme: true
+
+# 6. 真机安装测一下别让老用户装了崩掉
+adb install -r app/build/outputs/apk/release/app-release.apk
+# 手动验证核心流程
+
+# 7. 提交版本号和 release notes
+git add app/build.gradle.kts RELEASE_NOTES_v0.1.1.md
+git commit -m "release: v0.1.1"
+git push
+
+# 8. 打 tag
+git tag -a v0.1.1 -m "v0.1.1"
+git push origin v0.1.1
+
+# 9. 发 GitHub Release
+gh release create v0.1.1 \
+  "app/build/outputs/apk/release/app-release.apk#隔空刷-v0.1.1.apk" \
+  --title "隔空刷 v0.1.1" \
+  --notes-file RELEASE_NOTES_v0.1.1.md
+```
+
+### 5.2 常见踩坑
+
+| 错误 | 原因 | 解决 |
+|---|---|---|
+| `Keystore file '...' not found` | `gradle.properties` 里路径或值末尾有空格 | `build.gradle.kts` 已 `.trim()`；检查 `gradle.properties` 行末 |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE: ... signatures do not match` | release APK 的签名和手机上已装版本不匹配 | 说明之前装的是 debug 版（用的 `~/.android/debug.keystore`），先 `adb uninstall com.shower.voicectrl` 再装 release |
+| `Version code X is already in use` | 忘了把 `versionCode` 加 1 | 改 `build.gradle.kts` 的 `versionCode` |
+| APK 体积异常大 | 没加 `abiFilters`，x86/x86_64 被打进去 | 检查 `build.gradle.kts` 的 `defaultConfig.ndk.abiFilters` |
+
+### 5.3 回滚（万一发了个崩的版本）
+
+不能删 Release（用户已下载）；只能发一个修复版 `v0.1.2`，然后在 `v0.1.1` 页面加 "⚠️ 有严重 bug，建议升级到 v0.1.2" 的说明。
+
+```bash
+gh release edit v0.1.1 --notes "$(cat <<'EOF'
+⚠️ **此版本有严重 bug，请升级到 v0.1.2**
+
+[原 release notes]
+EOF
+)"
+```

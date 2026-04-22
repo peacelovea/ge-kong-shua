@@ -16,6 +16,8 @@
 - ✅ 品牌：隔空刷 + 机器人 logo
 - ✅ GitHub 公开仓库
 - ✅ 开发/调试文档沉淀
+- ✅ v0.1.0 发布到 [GitHub Releases](https://github.com/peacelovea/ge-kong-shua/releases/tag/v0.1.0)（Release 签名 + Keystore 基础设施就位）
+- ✅ 白名单扩展到 4 个短视频 App（抖音 / 抖音极速版 / 快手 / 快手极速版）
 
 ---
 
