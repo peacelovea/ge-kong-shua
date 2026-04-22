@@ -52,8 +52,12 @@ Android 应用：在**不想动手**的时候用语音切抖音——说 "下一
 
 ## 文档
 
-- 设计文档：[`docs/superpowers/specs/2026-04-17-shower-voice-ctrl-design.md`](docs/superpowers/specs/2026-04-17-shower-voice-ctrl-design.md)
-- 实施计划：[`docs/superpowers/plans/2026-04-17-shower-voice-ctrl.md`](docs/superpowers/plans/2026-04-17-shower-voice-ctrl.md)
+**入口**：[`docs/README.md`](docs/README.md) — 文档门户 / 索引，按"我想干什么"导航
+
+- 设计 · [`docs/superpowers/specs/2026-04-17-shower-voice-ctrl-design.md`](docs/superpowers/specs/2026-04-17-shower-voice-ctrl-design.md)
+- 实施计划 · [`docs/superpowers/plans/2026-04-17-shower-voice-ctrl.md`](docs/superpowers/plans/2026-04-17-shower-voice-ctrl.md)
+- 开发手册 · [`docs/development.md`](docs/development.md)
+- 路线图 · [`docs/roadmap.md`](docs/roadmap.md)
 
 ## 实测经验
 
