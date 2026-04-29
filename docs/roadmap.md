@@ -22,6 +22,8 @@
 - ✅ DataStore 配置持久化（2026-04-29）
 - ✅ 多 App 支持架构重构（2026-04-29）
 - ✅ 清理废弃提示音资源（2026-04-29）
+- ✅ 手势坐标调试面板（2026-04-29）
+- ✅ v0.2.0 发布到 [GitHub Releases](https://github.com/peacelovea/ge-kong-shua/releases/tag/v0.2.0)（调试面板 + 配置持久化 + 架构重构）
 
 ---
 
@@ -45,12 +47,6 @@
 **完成定义**：Vivo X200 Pro 上一键跳转到本 App 的自启动开关页面。
 **Blocker**：需要实测 OriginOS 的具体 intent action。
 
-### 2.3 手势坐标调试面板
-**为什么**：抖音版本更新可能让默认坐标失效；不同分辨率手机可能需要微调。
-**怎么做**：MainActivity 加一个隐藏入口（长按标题 3 秒），打开调试页面，四个滑块调 `centerXPct` / `swipeTopYPct` / `swipeBottomYPct` / `tapYPct`，存到 DataStore，`GestureConfig.default()` 改成从 DataStore 读。
-**完成定义**：能在不重新编译的情况下调整坐标并生效。
-**预估**：~100 行代码，半天。
-**前置条件**：✅ DataStore 配置持久化已完成（2026-04-29）
 
 ---
 

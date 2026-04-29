@@ -21,6 +21,21 @@ Android 应用：在**不想动手**的时候用语音切抖音——说 "下一
 - 打开 App → 开始监听 → 切到抖音
 - 说 "**下一条**" / "**上一条**" / "**暂停**"，抖音即模拟滑动 / 点击
 - 屏幕顶部弹出 iOS 风格的识别反馈横幅
+- **长按标题 3 秒**进入调试模式，可视化调整手势坐标
+
+## 下载
+
+**最新版本**：[v0.2.0](https://github.com/peacelovea/ge-kong-shua/releases/tag/v0.2.0)（2026-04-29）
+
+- [隔空刷-v0.2.0.apk](https://github.com/peacelovea/ge-kong-shua/releases/download/v0.2.0/app-release.apk)（103MB）
+
+**新功能**：
+- ✨ 手势坐标调试面板（长按标题进入）
+- ⏱️ 30 分钟无命令自动停止
+- 🏗️ DataStore 配置持久化
+- 🎯 多 App 支持架构
+
+查看完整 [发布说明](docs/releases/v0.2.0.md)
 
 ## 技术栈
 
