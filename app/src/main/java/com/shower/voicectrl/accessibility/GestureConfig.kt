@@ -1,6 +1,7 @@
 package com.shower.voicectrl.accessibility
 
 import com.shower.voicectrl.bus.Command
+import com.shower.voicectrl.config.AppConfig
 
 enum class GestureType { SWIPE, TAP, NONE }
 
@@ -40,6 +41,15 @@ data class GestureConfig(
             swipeTopYPct = 0.25f,
             swipeBottomYPct = 0.75f,
             tapYPct = 0.50f,
+            swipeDurationMs = 150L,
+            tapDurationMs = 40L,
+        )
+
+        fun from(coordinates: AppConfig.GestureCoordinates) = GestureConfig(
+            centerXPct = coordinates.centerXPct,
+            swipeTopYPct = coordinates.swipeTopYPct,
+            swipeBottomYPct = coordinates.swipeBottomYPct,
+            tapYPct = coordinates.tapYPct,
             swipeDurationMs = 150L,
             tapDurationMs = 40L,
         )

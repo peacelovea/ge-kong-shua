@@ -65,13 +65,16 @@ class ShowerAccessibilityService : AccessibilityService() {
             showBanner(command)
             return
         }
-        if (fgPkg !in SUPPORTED_PACKAGES) {
+        if (fgPkg == null || !SupportedApp.isSupported(fgPkg)) {
+            val appName = fgPkg?.let { SupportedApp.findByPackage(it)?.displayName } ?: "未知"
             showBanner(Command.UNMATCHED, subtitle = "非短视频 App 前台")
             return
         }
         showBanner(command)
         val metrics = resources.displayMetrics
-        val gesture = GestureConfig.default().toGesture(command, metrics.widthPixels, metrics.heightPixels)
+        val app = SupportedApp.findByPackage(fgPkg)
+        val config = app?.gestureConfig ?: GestureConfig.default()
+        val gesture = config.toGesture(command, metrics.widthPixels, metrics.heightPixels)
         if (gesture.type == GestureType.NONE) return
 
         val path = Path().apply {
@@ -239,13 +242,5 @@ class ShowerAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "ShowerAccess"
         private const val OVERLAY_MS = 1200L
-
-        // 支持的短视频 App 白名单。UI 交互模式（上滑切下一条 / 下滑回上一条 / 点中心暂停）一致即可加入。
-        private val SUPPORTED_PACKAGES = setOf(
-            "com.ss.android.ugc.aweme",       // 抖音
-            "com.ss.android.ugc.aweme.lite",  // 抖音极速版
-            "com.smile.gifmaker",             // 快手
-            "com.kuaishou.nebula",            // 快手极速版
-        )
     }
 }

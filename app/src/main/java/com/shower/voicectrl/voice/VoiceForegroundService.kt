@@ -19,13 +19,17 @@ import com.shower.voicectrl.MainActivity
 import com.shower.voicectrl.R
 import com.shower.voicectrl.bus.CommandBus
 import com.shower.voicectrl.bus.Debouncer
+import com.shower.voicectrl.config.AppConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 class VoiceForegroundService : Service() {
 
@@ -33,6 +37,8 @@ class VoiceForegroundService : Service() {
     private var captureJob: Job? = null
     private var recognizer: VoskRecognizer? = null
     private val debouncer = Debouncer()
+    private val lastCommandTime = AtomicLong(System.currentTimeMillis())
+    private var idleCheckJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -42,8 +48,12 @@ class VoiceForegroundService : Service() {
             return START_NOT_STICKY
         }
         startForegroundWithNotification()
+        lastCommandTime.set(System.currentTimeMillis())
         if (captureJob?.isActive != true) {
             captureJob = scope.launch { runCaptureLoop() }
+        }
+        if (idleCheckJob?.isActive != true) {
+            idleCheckJob = scope.launch { runIdleCheck() }
         }
         return START_STICKY
     }
@@ -51,6 +61,7 @@ class VoiceForegroundService : Service() {
     private suspend fun runCaptureLoop() {
         recognizer = VoskRecognizer.create(applicationContext) { cmd ->
             if (debouncer.shouldEmit(cmd)) {
+                lastCommandTime.set(System.currentTimeMillis())
                 CommandBus.INSTANCE.emit(cmd)
             }
         }
@@ -90,8 +101,37 @@ class VoiceForegroundService : Service() {
         }
     }
 
+    private suspend fun runIdleCheck() {
+        val appConfig = AppConfig(applicationContext)
+        val timeoutMinutes = appConfig.idleTimeoutMinutes.first()
+        val timeoutMs = timeoutMinutes * 60 * 1000L
+
+        while (scope.isActive) {
+            delay(60_000) // 每分钟检查一次
+            val idleTime = System.currentTimeMillis() - lastCommandTime.get()
+            if (idleTime >= timeoutMs) {
+                Log.i(TAG, "No command for ${idleTime / 60_000} minutes, auto-stopping")
+                sendAutoStopNotification(timeoutMinutes)
+                stopSelf()
+                break
+            }
+        }
+    }
+
+    private fun sendAutoStopNotification(timeoutMinutes: Long) {
+        val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("隔空刷已自动停止")
+            .setContentText("$timeoutMinutes 分钟无命令，已自动停止监听")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setAutoCancel(true)
+            .build()
+        mgr.notify(NOTIF_ID_AUTO_STOP, notification)
+    }
+
     override fun onDestroy() {
         captureJob?.cancel()
+        idleCheckJob?.cancel()
         recognizer?.close()
         recognizer = null
         scope.cancel()
@@ -139,6 +179,7 @@ class VoiceForegroundService : Service() {
         const val ACTION_STOP = "com.shower.voicectrl.STOP"
         private const val CHANNEL_ID = "voice_listen"
         private const val NOTIF_ID = 1001
+        private const val NOTIF_ID_AUTO_STOP = 1002
         private const val SAMPLE_RATE = 16_000
         private const val TAG = "VoiceFgService"
 
