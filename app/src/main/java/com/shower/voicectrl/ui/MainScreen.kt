@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +63,7 @@ fun MainScreen(
     onRequestMic: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
     onToggleListening: () -> Unit,
+    onEnterDebug: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -71,7 +74,7 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 40.dp),
         ) {
-            Header()
+            Header(onLongPress = onEnterDebug)
             Spacer(Modifier.height(28.dp))
             StatusCard(
                 state = state,
@@ -90,8 +93,14 @@ fun MainScreen(
 }
 
 @Composable
-private fun Header() {
-    Column {
+private fun Header(onLongPress: () -> Unit) {
+    Column(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onLongPress = { onLongPress() }
+            )
+        }
+    ) {
         Text(
             text = "隔空刷",
             fontWeight = FontWeight.Bold,

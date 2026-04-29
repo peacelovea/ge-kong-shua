@@ -24,13 +24,16 @@ import androidx.core.graphics.drawable.DrawableCompat
 import com.shower.voicectrl.R
 import com.shower.voicectrl.bus.Command
 import com.shower.voicectrl.bus.CommandBus
+import com.shower.voicectrl.config.AppConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class ShowerAccessibilityService : AccessibilityService() {
 
@@ -72,8 +75,13 @@ class ShowerAccessibilityService : AccessibilityService() {
         }
         showBanner(command)
         val metrics = resources.displayMetrics
-        val app = SupportedApp.findByPackage(fgPkg)
-        val config = app?.gestureConfig ?: GestureConfig.default()
+
+        // 从 AppConfig 读取手势配置
+        val config = runBlocking {
+            val coordinates = AppConfig(applicationContext).gestureCoordinates.first()
+            GestureConfig.from(coordinates)
+        }
+
         val gesture = config.toGesture(command, metrics.widthPixels, metrics.heightPixels)
         if (gesture.type == GestureType.NONE) return
 
