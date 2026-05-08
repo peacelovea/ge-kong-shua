@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicBoolean
 
 class VoiceForegroundService : Service() {
 
@@ -48,6 +49,7 @@ class VoiceForegroundService : Service() {
             return START_NOT_STICKY
         }
         startForegroundWithNotification()
+        running.set(true)
         lastCommandTime.set(System.currentTimeMillis())
         if (captureJob?.isActive != true) {
             captureJob = scope.launch { runCaptureLoop() }
@@ -130,6 +132,7 @@ class VoiceForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        running.set(false)
         captureJob?.cancel()
         idleCheckJob?.cancel()
         recognizer?.close()
@@ -182,6 +185,9 @@ class VoiceForegroundService : Service() {
         private const val NOTIF_ID_AUTO_STOP = 1002
         private const val SAMPLE_RATE = 16_000
         private const val TAG = "VoiceFgService"
+        private val running = AtomicBoolean(false)
+
+        fun isRunning(): Boolean = running.get()
 
         fun start(context: Context) {
             val intent = Intent(context, VoiceForegroundService::class.java)

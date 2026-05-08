@@ -101,11 +101,11 @@ grep -E "VoskRecognizer|ShowerAccess" /tmp/voicectrl.log
 | `VoskAPI` | Vosk 库内部 | 模型加载、grammar 构建（启动时会列出 vocab 丢失） |
 | `SoundFeedback` | `SoundFeedback.kt` | 历史遗留（已废），只有 play 失败才会出现 |
 
-### 2.4 确认抖音包名
+### 2.4 确认目标 App 包名
 ```bash
 adb shell "pm list packages" | grep aweme
 ```
-应返回 `package:com.ss.android.ugc.aweme`。如果你的抖音是特殊版（极速版 / TV 版）包名不一样，需要在 `ShowerAccessibilityService.DOUYIN_PACKAGE` 里加/换。
+抖音应返回 `package:com.ss.android.ugc.aweme`。如果是其他短视频 App 或特殊版本，先查到真实包名，再确认它已在 `SupportedApp.DEFAULT_APPS` 和 `accessibility_service_config.xml` 的 `packageNames` 中。
 
 ### 2.5 手动触发 Service 停止
 ```bash
@@ -159,12 +159,11 @@ adb shell am stopservice com.shower.voicectrl/.voice.VoiceForegroundService
 
 ### 4.2 适配一个新的 App（如快手）
 1. 查包名：`adb shell "pm list packages" | grep kuaishou` → `com.smile.gifmaker`
-2. 改 `ShowerAccessibilityService.DOUYIN_PACKAGE` → 改为 Set 或单独参数
-3. 改 accessibility config XML `packageNames=` 加上新包名
-4. 实测快手的滑动坐标是否和抖音一致（大概率一致，但可能底部导航区高度不同）
-5. 如果手势需要差异化，把 `GestureConfig.default()` 改成按包名返回不同 config
-
-更彻底的方案：把"目标 App + GestureConfig"抽成一个 `SupportedApp` 类，维护一个列表。
+2. 在 `SupportedApp.DEFAULT_APPS` 里增加包名、显示名称，必要时加专属 `GestureConfig`
+3. 在 `app/src/main/res/xml/accessibility_service_config.xml` 的 `packageNames` 中加上新包名
+4. 如果 App 内做了启用/禁用 UI，同步检查 `AppConfig.enabledAppPackages` 是否包含它
+5. 实测滑动坐标是否和现有 App 一致；底部导航区高度不同的 App 可能需要专属坐标
+6. 给 `SupportedApp` / 手势映射补单测
 
 ### 4.3 查看构建出的 APK 大小
 ```bash

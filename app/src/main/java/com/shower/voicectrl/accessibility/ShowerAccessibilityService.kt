@@ -68,8 +68,10 @@ class ShowerAccessibilityService : AccessibilityService() {
             showBanner(command)
             return
         }
-        if (fgPkg == null || !SupportedApp.isSupported(fgPkg)) {
-            val appName = fgPkg?.let { SupportedApp.findByPackage(it)?.displayName } ?: "未知"
+        val enabledPackages = runBlocking {
+            AppConfig(applicationContext).enabledAppPackages.first()
+        }
+        if (fgPkg == null || !SupportedApp.isEnabled(fgPkg, enabledPackages)) {
             showBanner(Command.UNMATCHED, subtitle = "非短视频 App 前台")
             return
         }

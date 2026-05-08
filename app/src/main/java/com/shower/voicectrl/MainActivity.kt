@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
             ShowervoicectrlTheme {
                 var micGranted by remember { mutableStateOf(isMicGranted()) }
                 var accessibilityEnabled by remember { mutableStateOf(isAccessibilityEnabled()) }
-                var listening by remember { mutableStateOf(false) }
+                var listening by remember { mutableStateOf(VoiceForegroundService.isRunning()) }
                 var showDebugScreen by remember { mutableStateOf(false) }
                 val scope = rememberCoroutineScope()
                 val appConfig = remember { AppConfig(applicationContext) }
@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
                     while (true) {
                         micGranted = isMicGranted()
                         accessibilityEnabled = isAccessibilityEnabled()
+                        listening = VoiceForegroundService.isRunning()
                         delay(1000)
                     }
                 }
@@ -98,7 +99,7 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 VoiceForegroundService.start(this)
                             }
-                            listening = !listening
+                            listening = !listening // optimistic; polling reconciles service state
                         },
                         onEnterDebug = { showDebugScreen = true }
                     )

@@ -52,6 +52,13 @@ data class SupportedApp(
         }
 
         /**
+         * 检查包名是否被支持且当前启用。
+         */
+        fun isEnabled(packageName: String, enabledPackages: Set<String>): Boolean {
+            return isSupported(packageName) && packageName in enabledPackages
+        }
+
+        /**
          * 获取所有支持的包名集合
          */
         fun supportedPackages(): Set<String> {
